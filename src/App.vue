@@ -1,87 +1,90 @@
-<script setup>
-import HelloWorld from "./components/HelloWorld.vue";
-import TheWelcome from "./components/TheWelcome.vue";
-</script>
-
 <template>
-  <header>
-    <img
-      alt="Vue logo"
-      class="logo"
-      src="./assets/logo.svg"
-      width="125"
-      height="125"
-    />
-
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-    </div>
-  </header>
-
-  <main>
-    <TheWelcome />
-  </main>
+  <div class="result" v-html="output"></div>
 </template>
 
+<script>
+export default {
+  data() {
+    return {
+      output: "",
+    };
+  },
+  mounted() {
+    this.axios
+      .get("/api")
+      .then((response) => {
+        let temp = "";
+        let arr = Object.keys(response.data).map(function (key) {
+          return [key, response.data[key]];
+        });
+        for (let i = 0; i < arr.length; i++) {
+          temp +=
+            "<div class='box'><div class='text'>" +
+            arr[i][0] +
+            "</div><div class='bar'><div class='inside' style='width: " +
+            parseInt(arr[i][1] * 100) +
+            "%'></div><div class='value'>" +
+            parseInt(arr[i][1] * 100) +
+            " %</div></div></div>";
+        }
+        this.output = temp;
+      })
+      .catch((e) => {
+        console.log(e);
+      });
+  },
+};
+</script>
+
 <style>
-@import "./assets/base.css";
-
-#app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-
-  font-weight: normal;
+* {
+  margin: 0;
+  padding: 0;
 }
 
-header {
-  line-height: 1.5;
+.result {
+  width: 800px;
+  margin: auto;
+  margin-top: 20px;
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
+.result .box {
+  padding: 10px 30px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
-a,
-.green {
-  text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
+.result .box .text {
+  width: 40%;
+  margin-top: 3px;
+  float: left;
+  font-family: "RobotoRegular";
 }
 
-@media (hover: hover) {
-  a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
-  }
+.result .box .bar {
+  width: 60%;
+  height: 10px;
+  position: relative;
+  float: right;
+  background-color: #9e9e9e;
+  border-radius: 8px;
 }
 
-@media (min-width: 1024px) {
-  body {
-    display: flex;
-    place-items: center;
-  }
+.result .box .bar .inside {
+  height: 10px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  background-color: #f44336;
+  border-radius: 5px;
+}
 
-  #app {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
-  }
-
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
+.result .box .bar .value {
+  position: absolute;
+  left: 0;
+  top: 12px;
+  font-family: "RobotoRegular";
+  font-size: 12px;
+  color: #9e9e9e;
 }
 </style>
