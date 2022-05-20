@@ -31,8 +31,7 @@
 export default {
   data() {
     return {
-      isCanvas: false,
-      isCanvasEdit: false,
+      isBaseImage: false,
       isLoading: false,
       isOutput: false,
       output: "",
@@ -46,10 +45,15 @@ export default {
     };
   },
   mounted() {
+    const vm = this;
     this.canvas = this.$refs.canvas;
     this.context = this.canvas.getContext("2d");
     this.canvasEdit = this.$refs.canvasEdit;
     this.contextEdit = this.canvasEdit.getContext("2d");
+    this.baseImage.src = "/assets/img/noimage.png";
+    this.baseImage.onload = function () {
+      vm.contextEdit.drawImage(vm.baseImage, 0, 0, 640, 480);
+    };
   },
   methods: {
     start() {
@@ -60,6 +64,7 @@ export default {
         vm.baseImage.src = e.target.result;
         vm.baseImage.onload = function () {
           vm.contextEdit.drawImage(vm.baseImage, 0, 0, 640, 480);
+          vm.isBaseImage = true;
         };
       };
       reader.readAsDataURL(this.$refs.file.files[0]);
@@ -96,13 +101,15 @@ export default {
       }
     },
     mouseDown(e) {
-      const rect = e.target.getBoundingClientRect();
-      this.sx = e.clientX - rect.left;
-      this.sy = e.clientY - rect.top;
-      this.isMouseDown = true;
+      if (this.isBaseImage == true) {
+        const rect = e.target.getBoundingClientRect();
+        this.sx = e.clientX - rect.left;
+        this.sy = e.clientY - rect.top;
+        this.isMouseDown = true;
+      }
     },
     mouseMove(e) {
-      if (this.isMouseDown == true) {
+      if (this.isBaseImage == true && this.isMouseDown == true) {
         const rect = e.target.getBoundingClientRect();
         this.ex = e.clientX - rect.left;
         this.ey = e.clientY - rect.top;
