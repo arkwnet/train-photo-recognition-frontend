@@ -1,9 +1,24 @@
 <template>
   <div class="main">
     <div class="input">
-      <input class="file" type="file" ref="file" />
-      <div class="button" @click="start">実行</div>
-      <canvas class="canvas" ref="canvas" width="128" height="128"></canvas>
+      <input class="file" type="file" ref="file" @change="start" />
+      <canvas
+        class="canvas"
+        ref="canvasEdit"
+        width="640"
+        height="480"
+        @mousedown="mouseDown"
+        @mousemove="mouseMove"
+        @mouseup="mouseUp"
+      ></canvas>
+      <br />
+      <canvas
+        class="canvas canvas-preview"
+        ref="canvas"
+        width="128"
+        height="128"
+      ></canvas>
+      <div class="button" @click="api">実行</div>
     </div>
     <div class="loading" v-if="isLoading">
       <img src="/assets/img/loading.gif" />
@@ -16,60 +31,106 @@
 export default {
   data() {
     return {
+      isCanvas: false,
+      isCanvasEdit: false,
       isLoading: false,
       isOutput: false,
       output: "",
+      baseImage: new Image(),
       image: "",
+      isMouseDown: false,
+      sx: 0,
+      sy: 0,
+      ex: 0,
+      ey: 0,
     };
   },
   mounted() {
     this.canvas = this.$refs.canvas;
     this.context = this.canvas.getContext("2d");
+    this.canvasEdit = this.$refs.canvasEdit;
+    this.contextEdit = this.canvasEdit.getContext("2d");
   },
   methods: {
     start() {
       let vm = this;
-      this.isLoading = true;
       this.isOutput = false;
       let reader = new FileReader();
       reader.onload = function (e) {
-        let image = new Image();
-        image.src = e.target.result;
-        image.onload = function () {
-          vm.context.drawImage(image, 0, 0, 128, 128);
-          vm.image = vm.canvas.toDataURL("image/jpeg");
-          vm.api();
+        vm.baseImage.src = e.target.result;
+        vm.baseImage.onload = function () {
+          vm.contextEdit.drawImage(vm.baseImage, 0, 0, 640, 480);
         };
       };
       reader.readAsDataURL(this.$refs.file.files[0]);
     },
     api() {
-      this.axios
-        .post("/api", {
-          image: this.image,
-        })
-        .then((response) => {
-          let temp = "";
-          let arr = Object.keys(response.data).map(function (key) {
-            return [key, response.data[key]];
+      if (this.image != "") {
+        this.isLoading = true;
+        this.axios
+          .post("/api", {
+            image: this.image,
+          })
+          .then((response) => {
+            let temp = "";
+            let arr = Object.keys(response.data).map(function (key) {
+              return [key, response.data[key]];
+            });
+            for (let i = 0; i < arr.length; i++) {
+              temp +=
+                "<div class='box'><div class='text'>" +
+                arr[i][0] +
+                "</div><div class='bar'><div class='inside' style='width: " +
+                parseInt(arr[i][1] * 100) +
+                "%'></div><div class='value'>" +
+                parseInt(arr[i][1] * 100) +
+                " %</div></div></div>";
+            }
+            this.isLoading = false;
+            this.isOutput = true;
+            this.output = temp;
+          })
+          .catch((e) => {
+            console.log(e);
           });
-          for (let i = 0; i < arr.length; i++) {
-            temp +=
-              "<div class='box'><div class='text'>" +
-              arr[i][0] +
-              "</div><div class='bar'><div class='inside' style='width: " +
-              parseInt(arr[i][1] * 100) +
-              "%'></div><div class='value'>" +
-              parseInt(arr[i][1] * 100) +
-              " %</div></div></div>";
-          }
-          this.isLoading = false;
-          this.isOutput = true;
-          this.output = temp;
-        })
-        .catch((e) => {
-          console.log(e);
-        });
+      }
+    },
+    mouseDown(e) {
+      const rect = e.target.getBoundingClientRect();
+      this.sx = e.clientX - rect.left;
+      this.sy = e.clientY - rect.top;
+      this.isMouseDown = true;
+    },
+    mouseMove(e) {
+      if (this.isMouseDown == true) {
+        const rect = e.target.getBoundingClientRect();
+        this.ex = e.clientX - rect.left;
+        this.ey = e.clientY - rect.top;
+        this.contextEdit.drawImage(this.baseImage, 0, 0, 640, 480);
+        this.contextEdit.strokeStyle = "red";
+        this.contextEdit.strokeWidth = 5;
+        this.contextEdit.strokeRect(
+          this.sx,
+          this.sy,
+          this.ex - this.sx,
+          this.ey - this.sy
+        );
+      }
+    },
+    mouseUp() {
+      this.isMouseDown = false;
+      this.context.drawImage(
+        this.canvasEdit,
+        this.sx,
+        this.sy,
+        this.ex - this.sx,
+        this.ey - this.sy,
+        0,
+        0,
+        128,
+        128
+      );
+      this.image = this.canvas.toDataURL("image/jpeg");
     },
   },
 };
@@ -85,6 +146,7 @@ export default {
   width: 800px;
   margin: auto;
   margin-top: 20px;
+  margin-bottom: 30px;
 }
 
 .input {
@@ -113,6 +175,10 @@ export default {
 
 .input .canvas {
   padding: 10px 0;
+}
+
+.input .canvas-preview {
+  margin-top: -24px;
 }
 
 .loading {
