@@ -10,6 +10,9 @@
         @mousedown="mouseDown"
         @mousemove="mouseMove"
         @mouseup="mouseUp"
+        @touchstart="mouseDown"
+        @touchmove="mouseMove"
+        @touchend="mouseUp"
       ></canvas>
       <br />
       <canvas
@@ -18,6 +21,10 @@
         width="128"
         height="128"
       ></canvas>
+      <div class="canvas-control">
+        <button @click="rotate(-5)">左回転</button>
+        <button @click="rotate(5)">右回転</button>
+      </div>
       <div class="button" @click="api">実行</div>
     </div>
     <div class="loading" v-if="isLoading">
@@ -42,6 +49,7 @@ export default {
       sy: 0,
       ex: 0,
       ey: 0,
+      degree: 0,
     };
   },
   mounted() {
@@ -102,17 +110,29 @@ export default {
     },
     mouseDown(e) {
       if (this.isBaseImage == true) {
+        e.preventDefault();
         const rect = e.target.getBoundingClientRect();
-        this.sx = e.clientX - rect.left;
-        this.sy = e.clientY - rect.top;
+        if (e.type == "touchstart") {
+          this.sx = e.changedTouches[0].clientX - rect.left;
+          this.sy = e.changedTouches[0].clientY - rect.top;
+        } else {
+          this.sx = e.clientX - rect.left;
+          this.sy = e.clientY - rect.top;
+        }
         this.isMouseDown = true;
       }
     },
     mouseMove(e) {
       if (this.isBaseImage == true && this.isMouseDown == true) {
+        e.preventDefault();
         const rect = e.target.getBoundingClientRect();
-        this.ex = e.clientX - rect.left;
-        this.ey = e.clientY - rect.top;
+        if (e.type == "touchmove") {
+          this.ex = e.changedTouches[0].clientX - rect.left;
+          this.ey = e.changedTouches[0].clientY - rect.top;
+        } else {
+          this.ex = e.clientX - rect.left;
+          this.ey = e.clientY - rect.top;
+        }
         this.contextEdit.drawImage(this.baseImage, 0, 0, 640, 480);
         this.contextEdit.strokeStyle = "red";
         this.contextEdit.strokeWidth = 5;
@@ -137,6 +157,25 @@ export default {
         128,
         128
       );
+      this.image = this.canvas.toDataURL("image/jpeg");
+    },
+    rotate(a) {
+      this.degree += a;
+      this.context.save();
+      this.context.translate(64, 64);
+      this.context.rotate((this.degree * Math.PI) / 180);
+      this.context.drawImage(
+        this.canvasEdit,
+        this.sx,
+        this.sy,
+        this.ex - this.sx,
+        this.ey - this.sy,
+        -64,
+        -64,
+        128,
+        128
+      );
+      this.context.restore();
       this.image = this.canvas.toDataURL("image/jpeg");
     },
   },
@@ -186,6 +225,15 @@ export default {
 
 .input .canvas-preview {
   margin-top: -24px;
+}
+
+.canvas-control {
+  margin-bottom: 12px;
+}
+
+.canvas-control button {
+  margin-right: 5px;
+  padding: 5px 10px;
 }
 
 .loading {

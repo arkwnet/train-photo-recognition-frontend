@@ -14,6 +14,9 @@ export default defineConfig({
         rewrite: (path) => path.replace("/api", "/"),
       },
     },
+    server: {
+      host: true,
+    },
   },
   resolve: {
     alias: {
